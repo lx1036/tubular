@@ -19,6 +19,8 @@ all: $(generated) $(deps)
 	@mkdir -p "bin/$(ARCH)"
 	GOARCH="$(ARCH)" $(GO) build -v -o "bin/$(ARCH)" ./cmd/...
 
+generate: $(generated)
+
 internal/%_bpfel.go internal/%_bpfeb.go internal/%.go.d:
 	$(GO) generate ./internal
 

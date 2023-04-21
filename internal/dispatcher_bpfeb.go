@@ -54,7 +54,29 @@ type dispatcherSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type dispatcherProgramSpecs struct {
-	Dispatcher *ebpf.ProgramSpec `ebpf:"dispatcher"`
+	AccessCtxSk             *ebpf.ProgramSpec `ebpf:"access_ctx_sk"`
+	CtxNarrowAccess         *ebpf.ProgramSpec `ebpf:"ctx_narrow_access"`
+	Dispatcher              *ebpf.ProgramSpec `ebpf:"dispatcher"`
+	LookupDrop              *ebpf.ProgramSpec `ebpf:"lookup_drop"`
+	LookupPass              *ebpf.ProgramSpec `ebpf:"lookup_pass"`
+	MultiProgDrop1          *ebpf.ProgramSpec `ebpf:"multi_prog_drop1"`
+	MultiProgDrop2          *ebpf.ProgramSpec `ebpf:"multi_prog_drop2"`
+	MultiProgPass1          *ebpf.ProgramSpec `ebpf:"multi_prog_pass1"`
+	MultiProgPass2          *ebpf.ProgramSpec `ebpf:"multi_prog_pass2"`
+	MultiProgRedir1         *ebpf.ProgramSpec `ebpf:"multi_prog_redir1"`
+	MultiProgRedir2         *ebpf.ProgramSpec `ebpf:"multi_prog_redir2"`
+	RedirIp4                *ebpf.ProgramSpec `ebpf:"redir_ip4"`
+	RedirIp6                *ebpf.ProgramSpec `ebpf:"redir_ip6"`
+	RedirPort               *ebpf.ProgramSpec `ebpf:"redir_port"`
+	ReuseportDrop           *ebpf.ProgramSpec `ebpf:"reuseport_drop"`
+	ReuseportPass           *ebpf.ProgramSpec `ebpf:"reuseport_pass"`
+	SelectSockA             *ebpf.ProgramSpec `ebpf:"select_sock_a"`
+	SelectSockA_noReuseport *ebpf.ProgramSpec `ebpf:"select_sock_a_no_reuseport"`
+	SelectSockB             *ebpf.ProgramSpec `ebpf:"select_sock_b"`
+	SkAssignEexist          *ebpf.ProgramSpec `ebpf:"sk_assign_eexist"`
+	SkAssignEsocknosupport  *ebpf.ProgramSpec `ebpf:"sk_assign_esocknosupport"`
+	SkAssignNull            *ebpf.ProgramSpec `ebpf:"sk_assign_null"`
+	SkAssignReplaceFlag     *ebpf.ProgramSpec `ebpf:"sk_assign_replace_flag"`
 }
 
 // dispatcherMapSpecs contains maps before they are loaded into the kernel.
@@ -64,6 +86,8 @@ type dispatcherMapSpecs struct {
 	Bindings           *ebpf.MapSpec `ebpf:"bindings"`
 	DestinationMetrics *ebpf.MapSpec `ebpf:"destination_metrics"`
 	Destinations       *ebpf.MapSpec `ebpf:"destinations"`
+	RedirMap           *ebpf.MapSpec `ebpf:"redir_map"`
+	RunMap             *ebpf.MapSpec `ebpf:"run_map"`
 	Sockets            *ebpf.MapSpec `ebpf:"sockets"`
 }
 
@@ -89,6 +113,8 @@ type dispatcherMaps struct {
 	Bindings           *ebpf.Map `ebpf:"bindings"`
 	DestinationMetrics *ebpf.Map `ebpf:"destination_metrics"`
 	Destinations       *ebpf.Map `ebpf:"destinations"`
+	RedirMap           *ebpf.Map `ebpf:"redir_map"`
+	RunMap             *ebpf.Map `ebpf:"run_map"`
 	Sockets            *ebpf.Map `ebpf:"sockets"`
 }
 
@@ -97,6 +123,8 @@ func (m *dispatcherMaps) Close() error {
 		m.Bindings,
 		m.DestinationMetrics,
 		m.Destinations,
+		m.RedirMap,
+		m.RunMap,
 		m.Sockets,
 	)
 }
@@ -105,12 +133,56 @@ func (m *dispatcherMaps) Close() error {
 //
 // It can be passed to loadDispatcherObjects or ebpf.CollectionSpec.LoadAndAssign.
 type dispatcherPrograms struct {
-	Dispatcher *ebpf.Program `ebpf:"dispatcher"`
+	AccessCtxSk             *ebpf.Program `ebpf:"access_ctx_sk"`
+	CtxNarrowAccess         *ebpf.Program `ebpf:"ctx_narrow_access"`
+	Dispatcher              *ebpf.Program `ebpf:"dispatcher"`
+	LookupDrop              *ebpf.Program `ebpf:"lookup_drop"`
+	LookupPass              *ebpf.Program `ebpf:"lookup_pass"`
+	MultiProgDrop1          *ebpf.Program `ebpf:"multi_prog_drop1"`
+	MultiProgDrop2          *ebpf.Program `ebpf:"multi_prog_drop2"`
+	MultiProgPass1          *ebpf.Program `ebpf:"multi_prog_pass1"`
+	MultiProgPass2          *ebpf.Program `ebpf:"multi_prog_pass2"`
+	MultiProgRedir1         *ebpf.Program `ebpf:"multi_prog_redir1"`
+	MultiProgRedir2         *ebpf.Program `ebpf:"multi_prog_redir2"`
+	RedirIp4                *ebpf.Program `ebpf:"redir_ip4"`
+	RedirIp6                *ebpf.Program `ebpf:"redir_ip6"`
+	RedirPort               *ebpf.Program `ebpf:"redir_port"`
+	ReuseportDrop           *ebpf.Program `ebpf:"reuseport_drop"`
+	ReuseportPass           *ebpf.Program `ebpf:"reuseport_pass"`
+	SelectSockA             *ebpf.Program `ebpf:"select_sock_a"`
+	SelectSockA_noReuseport *ebpf.Program `ebpf:"select_sock_a_no_reuseport"`
+	SelectSockB             *ebpf.Program `ebpf:"select_sock_b"`
+	SkAssignEexist          *ebpf.Program `ebpf:"sk_assign_eexist"`
+	SkAssignEsocknosupport  *ebpf.Program `ebpf:"sk_assign_esocknosupport"`
+	SkAssignNull            *ebpf.Program `ebpf:"sk_assign_null"`
+	SkAssignReplaceFlag     *ebpf.Program `ebpf:"sk_assign_replace_flag"`
 }
 
 func (p *dispatcherPrograms) Close() error {
 	return _DispatcherClose(
+		p.AccessCtxSk,
+		p.CtxNarrowAccess,
 		p.Dispatcher,
+		p.LookupDrop,
+		p.LookupPass,
+		p.MultiProgDrop1,
+		p.MultiProgDrop2,
+		p.MultiProgPass1,
+		p.MultiProgPass2,
+		p.MultiProgRedir1,
+		p.MultiProgRedir2,
+		p.RedirIp4,
+		p.RedirIp6,
+		p.RedirPort,
+		p.ReuseportDrop,
+		p.ReuseportPass,
+		p.SelectSockA,
+		p.SelectSockA_noReuseport,
+		p.SelectSockB,
+		p.SkAssignEexist,
+		p.SkAssignEsocknosupport,
+		p.SkAssignNull,
+		p.SkAssignReplaceFlag,
 	)
 }
 
