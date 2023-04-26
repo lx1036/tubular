@@ -74,7 +74,7 @@ func SetupLoopback() error {
 }
 
 func setupNetNS(networks []string, result chan<- ns.NetNS, quit <-chan struct{}) error {
-	if err := unix.Unshare(unix.CLONE_NEWNET); err != nil {
+	if err := unix.Unshare(unix.CLONE_NEWNET); err != nil { // 新建 netns `ip netns add netns1`
 		return fmt.Errorf("unshare: %s", err)
 	}
 

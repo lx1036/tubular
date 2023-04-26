@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"os/exec"
 	"os/signal"
 	"time"
 
@@ -16,20 +15,23 @@ import (
 
 func run() error {
 	// Set up tcp4 and tcp6 listeners.
-	tcp4, err := net.ListenTCP("tcp4", &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 1234})
+	tcp4, err := net.ListenTCP("tcp4", &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 1247})
 	if err != nil {
 		return err
 	}
 	defer tcp4.Close()
 
-	tcp6, err := net.ListenTCP("tcp6", &net.TCPAddr{IP: net.IPv6loopback, Port: 1234})
+	pid := os.Getpid()
+	fmt.Println(fmt.Sprintf("pid is %d", pid))
+
+	tcp6, err := net.ListenTCP("tcp6", &net.TCPAddr{IP: net.IPv6loopback, Port: 1247})
 	if err != nil {
 		return err
 	}
 	defer tcp6.Close()
 
 	// Set up a udp4 listener and enable IP_RECVORIGDSTADDR on it.
-	udp4, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 1234})
+	udp4, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 1247})
 	if err != nil {
 		return err
 	}
@@ -43,11 +45,14 @@ func run() error {
 	}
 
 	// Set up a udp6 listener and enable IPV6_RECVORIGDSTADDR, IPV6_FREEBIND on it.
-	udp6, err := net.ListenUDP("udp6", &net.UDPAddr{IP: net.IPv6loopback, Port: 1234})
+	udp6, err := net.ListenUDP("udp6", &net.UDPAddr{IP: net.IPv6loopback, Port: 1247})
 	if err != nil {
 		return err
 	}
 	defer udp6.Close()
+
+	pid = os.Getpid()
+	fmt.Println(fmt.Sprintf("pid is %d", pid))
 
 	err = sysconn.Control(udp6, func(fd int) error {
 		err := unix.SetsockoptInt(int(fd), unix.SOL_IPV6, unix.IPV6_RECVORIGDSTADDR, 1)
@@ -60,10 +65,13 @@ func run() error {
 		return err
 	}
 
+	pid = os.Getpid()
+	fmt.Println(fmt.Sprintf("pid is %d", pid))
+
 	// We've bound the listening sockets, notify systemd that the process has
 	// finished start up. This will execute any ExecStartPost commands, which
 	// allows us to run register-pid at the appropriate time.
-	_ = exec.Command("systemd-notify", "--ready", fmt.Sprintf("--pid=%d", os.Getpid())).Run()
+	//_ = exec.Command("systemd-notify", "--ready", fmt.Sprintf("--pid=%d", os.Getpid())).Run()
 
 	// Start goroutines that service the listeners.
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -163,6 +171,9 @@ func run() error {
 			}
 		}(conn)
 	}
+
+	pid = os.Getpid()
+	fmt.Println(fmt.Sprintf("pid is %d", pid))
 
 	<-ctx.Done()
 	return nil

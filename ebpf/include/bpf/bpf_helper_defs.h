@@ -2935,37 +2935,88 @@ static __u64 (*bpf_get_current_ancestor_cgroup_id)(int ancestor_level) = (void *
 /*
  * bpf_sk_assign
  *
- * 	Helper is overloaded depending on BPF program type. This
- * 	description applies to **BPF_PROG_TYPE_SCHED_CLS** and
- * 	**BPF_PROG_TYPE_SCHED_ACT** programs.
+ *		Helper is overloaded depending on BPF program type. This
+ *		description applies to **BPF_PROG_TYPE_SK_LOOKUP** programs.
  *
- * 	Assign the *sk* to the *skb*. When combined with appropriate
- * 	routing configuration to receive the packet towards the socket,
- * 	will cause *skb* to be delivered to the specified socket.
- * 	Subsequent redirection of *skb* via  **bpf_redirect**\ (),
- * 	**bpf_clone_redirect**\ () or other methods outside of BPF may
- * 	interfere with successful delivery to the socket.
+ *		Select the *sk* as a result of a socket lookup.
  *
- * 	This operation is only valid from TC ingress path.
+ *		For the operation to succeed passed socket must be compatible
+ *		with the packet description provided by the *ctx* object.
  *
- * 	The *flags* argument must be zero.
+ *		L4 protocol (**IPPROTO_TCP** or **IPPROTO_UDP**) must
+ *		be an exact match. While IP family (**AF_INET** or
+ *		**AF_INET6**) must be compatible, that is IPv6 sockets
+ *		that are not v6-only can be selected for IPv4 packets.
  *
- * Returns
- * 	0 on success, or a negative error in case of failure:
+ *		Only TCP listeners and UDP unconnected sockets can be
+ *		selected. *sk* can also be NULL to reset any previous
+ *		selection.
  *
- * 	**-EINVAL** if specified *flags* are not supported.
+ *		*flags* argument can combination of following values:
  *
- * 	**-ENOENT** if the socket is unavailable for assignment.
+ *		* **BPF_SK_LOOKUP_F_REPLACE** to override the previous
+ *		  socket selection, potentially done by a BPF program
+ *		  that ran before us.
  *
- * 	**-ENETUNREACH** if the socket is unreachable (wrong netns).
+ *		* **BPF_SK_LOOKUP_F_NO_REUSEPORT** to skip
+ *		  load-balancing within reuseport group for the socket
+ *		  being selected.
  *
- * 	**-EOPNOTSUPP** if the operation is not supported, for example
- * 	a call from outside of TC ingress.
+ *		On success *ctx->sk* will point to the selected socket.
  *
- * 	**-ESOCKTNOSUPPORT** if the socket type is not supported
- * 	(reuseport).
+ *	Return
+ *		0 on success, or a negative errno in case of failure.
+ *
+ *		* **-EAFNOSUPPORT** if socket family (*sk->family*) is
+ *		  not compatible with packet family (*ctx->family*).
+ *
+ *		* **-EEXIST** if socket has been already selected,
+ *		  potentially by another program, and
+ *		  **BPF_SK_LOOKUP_F_REPLACE** flag was not specified.
+ *
+ *		* **-EINVAL** if unsupported flags were specified.
+ *
+ *		* **-EPROTOTYPE** if socket L4 protocol
+ *		  (*sk->protocol*) doesn't match packet protocol
+ *		  (*ctx->protocol*).
+ *
+ *		* **-ESOCKTNOSUPPORT** if socket is not in allowed
+ *		  state (TCP listening or UDP unconnected).
  */
 static long (*bpf_sk_assign)(void *ctx, struct bpf_sock *sk, __u64 flags) = (void *) 124;
+
+/* long bpf_sk_assign(struct sk_buff *skb, void *sk, u64 flags)
+ *	Description
+ *		Helper is overloaded depending on BPF program type. This
+ *		description applies to **BPF_PROG_TYPE_SCHED_CLS** and
+ *		**BPF_PROG_TYPE_SCHED_ACT** programs.
+ *
+ *		Assign the *sk* to the *skb*. When combined with appropriate
+ *		routing configuration to receive the packet towards the socket,
+ *		will cause *skb* to be delivered to the specified socket.
+ *		Subsequent redirection of *skb* via  **bpf_redirect**\ (),
+ *		**bpf_clone_redirect**\ () or other methods outside of BPF may
+ *		interfere with successful delivery to the socket.
+ *
+ *		This operation is only valid from TC ingress path.
+ *
+ *		The *flags* argument must be zero.
+ *	Return
+ *		0 on success, or a negative error in case of failure:
+ *
+ *		**-EINVAL** if specified *flags* are not supported.
+ *
+ *		**-ENOENT** if the socket is unavailable for assignment.
+ *
+ *		**-ENETUNREACH** if the socket is unreachable (wrong netns).
+ *
+ *		**-EOPNOTSUPP** if the operation is not supported, for example
+ *		a call from outside of TC ingress.
+ *
+ *		**-ESOCKTNOSUPPORT** if the socket type is not supported
+ *		(reuseport).
+ */
+static long (*bpf_sk_assign)(struct sk_buff *skb, void *sk, u64 flags);
 
 /*
  * bpf_ktime_get_boot_ns

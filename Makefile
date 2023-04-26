@@ -24,6 +24,9 @@ generate: $(generated)
 internal/%_bpfel.go internal/%_bpfeb.go internal/%.go.d:
 	$(GO) generate ./internal
 
+tproxy_tc_ingress:
+	$(GO) generate ./internal/tproxy_tc_ingress.go
+
 .PHONY: package
 package: $(NAME)_$(VERSION)_$(ARCH).deb
 

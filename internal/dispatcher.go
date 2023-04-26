@@ -81,12 +81,12 @@ func CreateDispatcher(netnsPath, bpfFsPath string) (_ *Dispatcher, err error) {
 	defer objs.dispatcherPrograms.Close()
 	defer closeOnError(&objs.dispatcherMaps)
 
-	if err := objs.Dispatcher.Pin(programPath(tempDir)); err != nil {
+	if err := objs.Dispatcher.Pin(programPath(tempDir)); err != nil { // pin sk_lookup program: /sys/fs/bpf/4026531840_dispatcher/program
 		return nil, fmt.Errorf("pin program: %s", err)
 	}
 
 	// The dispatcher is active after this call.
-	link, err := link.AttachNetNs(int(netns.Fd()), objs.Dispatcher)
+	link, err := link.AttachNetNs(int(netns.Fd()), objs.Dispatcher) // attach sk_lookup program to tmped netns
 	if err != nil {
 		return nil, fmt.Errorf("attach program to netns %s: %s", netns.Path(), err)
 	}
@@ -113,6 +113,49 @@ func CreateDispatcher(netnsPath, bpfFsPath string) (_ *Dispatcher, err error) {
 	return &Dispatcher{dir, pinPath, objs.Bindings, dests}, nil
 }
 
+type Skel struct {
+	Objs *dispatcherObjects
+}
+
+func GetSkel(netnsPath, bpfFsPath string) (*Skel, error) {
+	var err error
+	closeOnError := func(c io.Closer) {
+		if err != nil {
+			c.Close()
+		}
+	}
+
+	netns, pinPath, err := openNetNS(netnsPath, bpfFsPath)
+	if err != nil {
+		return nil, err
+	}
+	defer netns.Close()
+
+	tempDir, err := ioutil.TempDir(filepath.Dir(pinPath), "tubular-*")
+	if err != nil {
+		return nil, fmt.Errorf("can't create temp directory: %s", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	dir, err := lock.OpenLockedExclusive(tempDir)
+	if err != nil {
+		return nil, err
+	}
+	defer closeOnError(dir)
+
+	var objs dispatcherObjects
+	_, err = loadPatchedDispatcher(&objs, &ebpf.CollectionOptions{
+		Maps: ebpf.MapOptions{PinPath: tempDir},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("load BPF: %s", err)
+	}
+	defer objs.dispatcherPrograms.Close()
+	defer closeOnError(&objs.dispatcherMaps)
+
+	return &Skel{Objs: &objs}, nil
+}
+
 func adjustPermissions(path string) error {
 	const (
 		// Only let group list and open the directory. This is important since
@@ -122,7 +165,7 @@ func adjustPermissions(path string) error {
 		objMode os.FileMode = 0640
 	)
 
-	if err := os.Chmod(path, dirMode); err != nil {
+	if err := os.Chmod(path, dirMode); err != nil { // /sys/fs/bpf/4026531840_dispatcher/
 		return err
 	}
 
@@ -131,7 +174,7 @@ func adjustPermissions(path string) error {
 		return fmt.Errorf("read state entries: %s", err)
 	}
 
-	for _, entry := range entries {
+	for _, entry := range entries { // /sys/fs/bpf/4026531840_dispatcher/*
 		if entry.IsDir() {
 			return fmt.Errorf("change access mode: %q is a directory", entry.Name())
 		}

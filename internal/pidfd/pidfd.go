@@ -38,7 +38,7 @@ func Files(pid int, ps ...sysconn.Predicate) (files []*os.File, err error) {
 
 	for i, gap := 0, 0; i < int(^uint(0)>>1) && gap < maxFDGap; i++ {
 		target, err := unix.PidfdGetfd(pidfd, i, 0)
-		if errors.Is(err, unix.EBADF) {
+		if errors.Is(err, unix.EBADF) { // 总共只会试错32次, int(^uint(0)>>1)=9223372036854775807
 			gap++
 			continue
 		}

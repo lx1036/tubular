@@ -125,6 +125,11 @@ func registerPID(e *env, args ...string) error {
 		}
 	}()
 
+	fmt.Println(fmt.Sprintf("files len %d", len(files)))
+	for _, file := range files {
+		fmt.Println(fmt.Sprintf("fd:%d name:%s", int(file.Fd()), file.Name()))
+	}
+
 	if err := registerFiles(e, label, files); err != nil {
 		return fmt.Errorf("pid %d: %w", pid, err)
 	}

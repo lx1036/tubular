@@ -1,0 +1,13 @@
+# This is a transient unit file, created programmatically via the systemd API. Do not edit.
+[Unit]
+Description=/root/tubular/example/demo/main
+CollectMode=inactive-or-failed
+
+[Service]
+Type=notify
+NotifyAccess=all
+ExecStart=
+ExecStartPost=@/usr/local/bin/tubectl "/usr/local/bin/tubectl" "register-pid" "$MAINPID" "example-test13" "tcp" "127.0.0.1" "1243"
+Environment="HOME=/tmp/tmp.123"
+ExecStart=
+ExecStart=@/root/tubular/example/demo/main "/root/tubular/example/demo/main"
