@@ -3016,7 +3016,7 @@ static long (*bpf_sk_assign)(void *ctx, struct bpf_sock *sk, __u64 flags) = (voi
  *		**-ESOCKTNOSUPPORT** if the socket type is not supported
  *		(reuseport).
  */
-static long (*bpf_sk_assign)(struct sk_buff *skb, void *sk, u64 flags);
+//static long (*bpf_sk_assign)(struct sk_buff *skb, void *sk, u64 flags);
 
 /*
  * bpf_ktime_get_boot_ns

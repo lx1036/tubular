@@ -24,25 +24,28 @@
 static inline struct bpf_sock_tuple *get_tuple(struct __sk_buff *skb, bool *ipv4, bool *tcp) {
     void *data_end = (void *)(long)skb->data_end;
 	void *data = (void *)(long)skb->data;
-    struct ethhdr *eth;
-    eth = (struct ethhdr *)(data);
-	if (eth + 1 > data_end)
-		return NULL;
+    struct ethhdr *eth = (struct ethhdr *)(data);
+//	if (eth + 1 > data_end)
+//		return NULL;
+	if (data + sizeof(*eth) > data_end)
+	    return NULL;
 
     struct bpf_sock_tuple *result;
     __u8 proto = 0;
-    __u64 ihl_len;
+//    __u64 ihl_len;
     if (eth->h_proto == bpf_htons(ETH_P_IP)) {
         struct iphdr *iph = (struct iphdr *)(data+sizeof(*eth));
-        if (iph + 1 > data_end) {
-            return NULL;
-        }
+//        if (iph + 1 > data_end) {
+//            return NULL;
+//        }
+        if (data + sizeof(*iph) > data_end)
+        	return NULL;
         if (iph->ihl != 5) {
             /* Options are not supported */
 			return NULL;
         }
 
-        ihl_len = iph->ihl * 4;
+//        ihl_len = iph->ihl * 4;
         proto = iph->protocol;
 		*ipv4 = true;
         result = (struct bpf_sock_tuple *)&iph->saddr; // 这里为何直接使用 saddr
@@ -150,7 +153,7 @@ int bpf_sk_assign_test(struct __sk_buff *skb)
 
     tuple = get_tuple(skb, &ipv4, &tcp);
 	if (!tuple)
-		return TC_ACT_SHOT; // drop packet
+		return TC_ACT_SHOT; // drop packet // TC_ACT_OK 或许不要 drop
 
     /* Note that the verifier socket return type for bpf_skc_lookup_tcp()
 	 * differs from bpf_sk_lookup_udp(), so even though the C-level type is
