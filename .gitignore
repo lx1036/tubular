@@ -22,3 +22,5 @@ coverage.html
 
 # bpf2go output
 !*_bpf*.o
+
+vendor
