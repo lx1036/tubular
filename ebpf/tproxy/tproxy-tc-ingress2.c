@@ -48,7 +48,7 @@ static inline struct bpf_sock_tuple *get_tuple(struct __sk_buff *skb, bool *ipv4
 //        ihl_len = iph->ihl * 4;
         proto = iph->protocol;
 		*ipv4 = true;
-        result = (struct bpf_sock_tuple *)&iph->saddr; // 这里为何直接使用 saddr
+        result = (struct bpf_sock_tuple *)(void*)(long)&iph->saddr; // 这里为何直接使用 saddr
     } else if (eth->h_proto == bpf_htons(ETH_P_IPV6)){
     
     } else {

@@ -10,6 +10,7 @@ require (
 	github.com/prometheus/client_golang v1.9.0
 	github.com/prometheus/common v0.15.0
 	github.com/sirupsen/logrus v1.6.0
+	github.com/vishvananda/netlink v0.0.0-20181108222139-023a6dafdcdf
 	golang.org/x/sys v0.5.0
 	inet.af/netaddr v0.0.0-20210603230628-bf05d8b52dda
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.62
@@ -39,6 +40,7 @@ require (
 	github.com/prometheus/procfs v0.2.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.9 // indirect
+	github.com/vishvananda/netns v0.0.0-20180720170159-13995c7128cc // indirect
 	go4.org/intern v0.0.0-20210108033219-3eb7198706b2 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20201222180813-1025295fd063 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect

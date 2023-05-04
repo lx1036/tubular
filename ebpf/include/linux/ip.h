@@ -15,4 +15,4 @@ struct iphdr {
 	__be32	saddr;
 	__be32	daddr;
 	/*The options start here. */
-};
+} __attribute__((packed));
